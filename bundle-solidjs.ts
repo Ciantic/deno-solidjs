@@ -50,8 +50,7 @@ async function buildTsFile(file: string, outFile: string) {
         ], 
     });
 
-	console.log(result.errors);
-    // esbuild.stop();
+    console.log(result.errors);
 }
 
 // Get first argument
