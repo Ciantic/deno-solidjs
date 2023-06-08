@@ -1,14 +1,7 @@
-import * as esbuild from "https://deno.land/x/esbuild/mod.js";
-import { denoPlugin } from "https://deno.land/x/esbuild_deno_loader/mod.ts";
-import { solidPlugin } from "https://esm.sh/esbuild-plugin-solid";
+import * as esbuild from "npm:esbuild";
+import { denoPlugins } from "https://deno.land/x/esbuild_deno_loader@0.8.1/mod.ts";
+import { solidPlugin } from "npm:esbuild-plugin-solid";
 
-// Deno plugin does not work with npm specifier yet:
-// https://github.com/lucacasonato/esbuild_deno_loader/issues/29
-//
-// When it does:
-// 1. Add external option ['npm:solid-js/web', 'npm:solid-js']
-// 2. Change solidPlugin's moduleName to 'npm:solid-js/web'
-// 3. In source code use also `npm:solid-js/web` instead of URL
 
 async function buildTsFile(file: string, outFile: string) {
     if (!file) {
@@ -37,44 +30,39 @@ async function buildTsFile(file: string, outFile: string) {
     const compileOutput = outFile.replace(/\.js$/, ".compile.js");
     const bundleOutput = outFile;
 
-    await esbuild.build({
+    const plugins: any[] = [...denoPlugins({})];
+
+    const result = await esbuild.build({
         entryPoints: [file],
-        outfile: compileOutput,
-        // outfile: bundleOutput,
+        // outfile: compileOutput,
+        outfile: bundleOutput,
         // Bundle relative imports
         bundle: true,
         format: "esm",
         // Need to mark every bare import as external
         // external: ['solid-js', 'solid-js/web', 'npm:solid-js/web', 'npm:solid-js'],
         // Tree-shaking is done below
-        treeShaking: false,
+        treeShaking: true,
+        minify: true,
         // Compile SolidJS JSX
 
-        plugins: [
+        plugins: [ 
+            plugins[0],
             solidPlugin({
                 solid: {
-                    // moduleName: 'npm:solid-js/web',
-                    moduleName: "https://esm.sh/solid-js@1.6.15/web?target=esnext",
+                    moduleName: 'npm:solid-js/web',
                 },
             }) as any,
+            plugins[1]
         ], 
     });
 
-    const result = await esbuild.build({
-        entryPoints: [compileOutput],
-        outfile: bundleOutput,
-        bundle: true,
-        treeShaking: true,
-        plugins: [denoPlugin({}) as any],
-    });
-
 	console.log(result.errors);
-
-    esbuild.stop();
+    // esbuild.stop();
 }
 
 // Get first argument
 const file = Deno.args[0];
 const outFile = Deno.args[1];
 
-await buildTsFile(file, outFile);
+await buildTsFile(file, outFile); 
