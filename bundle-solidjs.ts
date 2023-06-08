@@ -26,34 +26,27 @@ async function buildTsFile(file: string, outFile: string) {
         return false;
     }
 
-    // Replace extension with "compile.js"
-    const compileOutput = outFile.replace(/\.js$/, ".compile.js");
-    const bundleOutput = outFile;
-
-    const plugins: any[] = [...denoPlugins({})];
-
+    const [denoResolver, denoLoader] = [...denoPlugins({})];
     const result = await esbuild.build({
         entryPoints: [file],
-        // outfile: compileOutput,
-        outfile: bundleOutput,
-        // Bundle relative imports
+        outfile: outFile,
         bundle: true,
         format: "esm",
-        // Need to mark every bare import as external
-        // external: ['solid-js', 'solid-js/web', 'npm:solid-js/web', 'npm:solid-js'],
-        // Tree-shaking is done below
         treeShaking: true,
         minify: true,
-        // Compile SolidJS JSX
 
         plugins: [ 
-            plugins[0],
+            denoResolver,
+
+            // Solid handles the JSX, so it needs to be sandwiched between the deno plugins
             solidPlugin({
                 solid: {
                     moduleName: 'npm:solid-js/web',
                 },
             }) as any,
-            plugins[1]
+
+
+            denoLoader
         ], 
     });
 
